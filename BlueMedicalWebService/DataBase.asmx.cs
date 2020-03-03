@@ -142,5 +142,51 @@ namespace BlueMedicalWebService
             }
         }
         #endregion
+
+        #region Updates
+        [WebMethod]
+        public void UpdateFixedAsset(string assetId, string assetName, string departmentID, string amount)
+        {
+            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+
+            DateTime lastUsed = System.DateTime.Today;
+
+            string query = "UPDATE FixedAssets SET AssetName = @AssetName, DepartmentID = @DepartmentID, Amount = @Amount, LastUsed = '" + lastUsed + "' WHERE AssetID = " + assetId + "";
+
+            using (SqlCommand cmd = new SqlCommand(query))
+            {
+                cmd.Parameters.AddWithValue("@AssetName", assetName);
+                cmd.Parameters.AddWithValue("@DepartmentID", departmentID);
+                cmd.Parameters.AddWithValue("@Amount", amount);
+
+                cmd.Connection = conn;
+                conn.Open();
+                cmd.ExecuteNonQuery();
+                conn.Close();
+            }
+        }
+        #endregion
+
+        #region Delete
+        [WebMethod]
+        public void DeleteFixedAsset(string assetId)
+        {
+            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+
+            DateTime lastUsed = System.DateTime.Today;
+
+            string query = "DELETE FROM FixedAssets WHERE AssetID = @AssetID";
+
+            using (SqlCommand cmd = new SqlCommand(query))
+            {
+                cmd.Parameters.AddWithValue("@AssetID", assetId);
+
+                cmd.Connection = conn;
+                conn.Open();
+                cmd.ExecuteNonQuery();
+                conn.Close();
+            }
+        }
+        #endregion
     }
 }
