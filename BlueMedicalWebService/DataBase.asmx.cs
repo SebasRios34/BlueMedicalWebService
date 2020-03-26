@@ -22,13 +22,44 @@ namespace BlueMedicalWebService
 
         #region Gets
         [WebMethod]
+        public Boolean ValidationUser(string username, string password)
+        {
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
+            string query = "SELECT COUNT(Username) from Users where Username='"
+                + username + "' and Password='" + password + "'";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+            return (ds.Tables[0].Rows[0][0].ToString() == "1");
+        }
+
+        [WebMethod]
+        public Boolean GetStatus(string username)
+        {
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
+
+            string query = "SELECT COUNT(Username) from Users where Username='"
+                + username + "' and Status = 'Active'";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+            return (ds.Tables[0].Rows[0][0].ToString() == "1");
+
+        }
+
+        [WebMethod]
         public DataSet GetFixedAssets()
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
 
-            string query = "SELECT AssetID, AssetName, DepartmentName, Amount, DateCreated, LastUsed " +
-                "FROM FixedAssets A " +
-                "INNER JOIN Departments D ON A.DepartmentID = D.DepartmentID;";
+
+            string query = "SELECT AssetID, AssetName, DepartmentName, DateCreated, LastUsed, UsefulLife, Price, DepreciationRate, DepreciatedAmount FROM FixedAssets A INNER JOIN Departments D ON A.DepartmentID = D.DepartmentID ORDER BY AssetID;";
 
             SqlDataAdapter da = new SqlDataAdapter(query, conn);
             DataSet ds = new DataSet();
@@ -40,7 +71,8 @@ namespace BlueMedicalWebService
         [WebMethod]
         public DataSet GetFixedAssetsByID(string id)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             string query = "SELECT * FROM FixedAssets WHERE AssetID = " + id;
 
@@ -54,7 +86,8 @@ namespace BlueMedicalWebService
         [WebMethod]
         public DataSet GetDepartments()
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             string query = "SELECT * FROM Departments";
 
@@ -68,7 +101,8 @@ namespace BlueMedicalWebService
         [WebMethod]
         public DataSet GetDepartmentsByID(string id)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             string query = "SELECT * FROM Departments WHERE DepartmentID = " + id;
 
@@ -82,20 +116,32 @@ namespace BlueMedicalWebService
 
         #region Inserts
         [WebMethod]
-        public void InsertFixedAsset(string assetName, string departmentID, string amount)
+        public void InsertFixedAsset(string assetName, string departmentID, string usefulLife, string price)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             DateTime dateCreated = System.DateTime.Today;
             DateTime lastUsed = System.DateTime.Today;
 
-            string query = "INSERT INTO FixedAssets (AssetName, DepartmentID, Amount, DateCreated, LastUsed) VALUES (@AssetName, @DepartmentID, @Amount, '" + dateCreated + "', '" + lastUsed + "' )";
+            var vidaUtil = Convert.ToDouble(usefulLife);
+            var precio = Convert.ToDouble(price);
+
+            //no sirve formula de depreciationRate y depreciatedAmount
+            double depreciationRate =  1 / vidaUtil;
+            depreciationRate = depreciationRate * 2;
+            var depreciatedAmount = precio * depreciationRate;
+
+             string query = "INSERT INTO FixedAssets (AssetName, DepartmentID, DateCreated, LastUsed, UsefulLife, Price, DepreciationRate, DepreciatedAmount) VALUES (@AssetName, @DepartmentID, '" + dateCreated + "', '" + lastUsed + "', @UsefulLife, @Price, @DepreciationRate, @DepreciatedAmount)";
 
             using (SqlCommand cmd = new SqlCommand(query))
             {
                 cmd.Parameters.AddWithValue("@AssetName", assetName);
                 cmd.Parameters.AddWithValue("@DepartmentID", departmentID);
-                cmd.Parameters.AddWithValue("@Amount", amount);
+                cmd.Parameters.AddWithValue("@UsefulLife", usefulLife);
+                cmd.Parameters.AddWithValue("@Price", price);
+                cmd.Parameters.AddWithValue("@DepreciationRate", depreciationRate);
+                cmd.Parameters.AddWithValue("@DepreciatedAmount", depreciatedAmount);
 
                 cmd.Connection = conn;
                 conn.Open();
@@ -107,7 +153,8 @@ namespace BlueMedicalWebService
         [WebMethod]
         public void InsertDepartment(string departmentName)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             string query = "INSERT INTO Departments (DepartmentName) VALUES (@DepartmentName)";
 
@@ -125,7 +172,8 @@ namespace BlueMedicalWebService
         [WebMethod]
         public void InsertUsers(string userName, string password, string status)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             string query = "INSERT INTO Users (UserName, Password, Status) VALUES (@UserName, @Password, @Status)";
 
@@ -147,17 +195,17 @@ namespace BlueMedicalWebService
         [WebMethod]
         public void UpdateFixedAsset(string assetId, string assetName, string departmentID, string amount)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             DateTime lastUsed = System.DateTime.Today;
 
-            string query = "UPDATE FixedAssets SET AssetName = @AssetName, DepartmentID = @DepartmentID, Amount = @Amount, LastUsed = '" + lastUsed + "' WHERE AssetID = " + assetId + "";
+            string query = "UPDATE FixedAssets SET AssetName = @AssetName, DepartmentID = @DepartmentID, LastUsed = '" + lastUsed + "',  WHERE AssetID = " + assetId + "";
 
             using (SqlCommand cmd = new SqlCommand(query))
             {
                 cmd.Parameters.AddWithValue("@AssetName", assetName);
                 cmd.Parameters.AddWithValue("@DepartmentID", departmentID);
-                cmd.Parameters.AddWithValue("@Amount", amount);
 
                 cmd.Connection = conn;
                 conn.Open();
@@ -171,7 +219,8 @@ namespace BlueMedicalWebService
         [WebMethod]
         public void DeleteFixedAsset(string assetId)
         {
-            conn.ConnectionString = "Data Source=DESKTOP-6PS3SV3; Initial Catalog='WSActivosFijos'; Trusted_Connection = True";
+            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+
 
             DateTime lastUsed = System.DateTime.Today;
 
