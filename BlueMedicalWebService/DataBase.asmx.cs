@@ -20,13 +20,175 @@ namespace BlueMedicalWebService
     {
         SqlConnection conn = new SqlConnection();
 
+        [WebMethod]
+        public string ValidacionNumTarjeta (string Num_Tarjeta, string Mes_Exp, string Anio_Exp, string CVV) 
+        {
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
+
+            string query = "SELECT COUNT(Num_Tarjeta) FROM DBO.tbInfoTarjetas WHERE Num_Tarjeta = '" + Num_Tarjeta + "'AND Mes_Exp = " + Mes_Exp + " AND Anio_Exp = " + Anio_Exp + " AND CVV = " + CVV + ";";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+
+            var validar = ds.Tables[0].Rows[0][0].ToString();  
+
+            if (validar == "1")
+            {
+                return "0 - Tarjeta Existente";
+            }
+            else
+            {
+                return "1 - Tarjeta No Existente";
+            }
+        }
+
+        [WebMethod]
+        public string ValidacionFecha(string Num_Tarjeta, int Mes_Exp, int Anio_Exp)
+        {
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
+
+            string query = "SELECT COUNT(Num_Tarjeta) FROM DBO.tbInfoTarjetas WHERE Num_Tarjeta = '" + Num_Tarjeta + "'AND Mes_Exp = " + Mes_Exp + " AND Anio_Exp = " + Anio_Exp + ";";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+
+            var validar = ds.Tables[0].Rows[0][0].ToString();
+
+            if (validar == "1")
+            {
+                int mes = 8;
+                int year = 20;
+
+                if (Anio_Exp >= year) 
+                {
+                    if (Mes_Exp >= mes)
+                    {
+                        return "0 - Tarjeta Existente (Fecha)";
+                    }
+                    else 
+                    {
+                        return "2 - Tarjeta Vencida";
+                    }
+                } else 
+                {
+                    return "2 - Tarjeta Vencida";
+                }
+            }
+            else
+            {
+                return "2 - Tarjeta No Encontrada";
+            }
+        }
+
+
+        [WebMethod]
+        public string ValidacionCVV(string Num_Tarjeta, string CVV)
+        {
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
+
+            string query = "SELECT COUNT(Num_Tarjeta) FROM DBO.tbInfoTarjetas WHERE Num_Tarjeta = '" + Num_Tarjeta + " AND CVV = " + CVV + ";";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+
+            var validar = ds.Tables[0].Rows[0][0].ToString();
+
+            if (validar == "1")
+            {
+                return "0 - Tarjeta Existente (CVV)";
+            }
+            else
+            {
+                return "3 - CVV Incorrecto";
+            }
+        }
+
+        [WebMethod]
+        public string ValidacionTipo(string Tipo)
+        {
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
+
+            string query = "SELECT COUNT(Tipo) FROM DBO.tbInfoTarjetas WHERE Tipo = " + Tipo + ";";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+
+            var validar = ds.Tables[0].Rows[0][0].ToString();
+
+            if (validar == "1")
+            {
+                return "0 - Tarjeta Existente (Tipo)";
+            }
+            else
+            {
+                return "4 - Tipo de Tarjeta No Existente";
+            }
+        }
+
+        [WebMethod]
+        public string validacionMonto(string Num_Tarjeta, string Monto)
+        {
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
+
+            string query = "SELECT COUNT(Monto) FROM DBO.tbInfoTarjetas WHERE Num_Tarjeta = " + Num_Tarjeta + " AND Monto > " + Monto + ";";
+
+            SqlDataAdapter da = new SqlDataAdapter(query, conn);
+
+            DataSet ds = new DataSet();
+
+            da.Fill(ds);
+
+            var validar = ds.Tables[0].Rows[0][0].ToString();
+
+            if (validar == "1")
+            {
+                string montoDB = "SELECT Monto FROM DBO.tbInfoTarjetas WHERE Num_Tarjeta = '" + Num_Tarjeta + "';";
+                SqlDataAdapter daMonto = new SqlDataAdapter(montoDB, conn);
+                DataSet dsMonto = new DataSet();
+                daMonto.Fill(dsMonto);
+                var montoString = dsMonto.Tables[0].Rows[0][0].ToString();
+
+                float monto = float.Parse(montoString);
+                float montoDescontado = float.Parse(Monto);
+
+                float total = monto - montoDescontado;
+
+                string update = "UPDATE dbo.tbInfoTarjetas SET Monto = " + total + "WHERE Num_Tarjeta = '" + Num_Tarjeta + "';";
+
+                using (SqlCommand cmd = new SqlCommand(update))
+                {
+                    cmd.Parameters.AddWithValue("@Monto", total);
+
+                    cmd.Connection = conn;
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                    conn.Close();
+                }
+
+                return "Total: " + total;
+            }
+            else
+            {
+                return "5 - No Hay Fondos Suficiente";
+            }
+        }
+
+
         #region Gets
         [WebMethod]
         public Boolean ValidationUser(string username, string password)
         {
-            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
 
-            string query = "SELECT COUNT(Username) from Users where Username='"
+            string query = "SELECT from dbo.tbConsecutivos where Username='"
                 + username + "' and Password='" + password + "'";
 
             SqlDataAdapter da = new SqlDataAdapter(query, conn);
@@ -84,12 +246,12 @@ namespace BlueMedicalWebService
         }
 
         [WebMethod]
-        public DataSet GetDepartments()
+        public DataSet GetConsecutivos()
         {
-            conn.ConnectionString = "Server=tcp:ulacitws.database.windows.net,1433;Initial Catalog=WSActivosFijos;Persist Security Info=False;User ID=adminulacit;Password=Ulacit2019.;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+            conn.ConnectionString = "Data Source= localhost;Initial Catalog=dbEfoodMetodosPago;Trusted_Connection=True";
 
 
-            string query = "SELECT * FROM Departments";
+            string query = "SELECT * FROM dbo.tbConsecutivos";
 
             SqlDataAdapter da = new SqlDataAdapter(query, conn);
             DataSet ds = new DataSet();
